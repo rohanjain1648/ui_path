@@ -1,0 +1,62 @@
+[
+  {
+    "id": "v-001",
+    "name": "Acme Software Solutions Ltd.",
+    "code": "ACME-SW",
+    "tax_id": "12-3456789",
+    "payment_terms": "2/10 net 30",
+    "bank_account": "9876543210",
+    "bank_routing": "021000021",
+    "contact_email": "ap@acmesoftware.com",
+    "risk_score": 5.0,
+    "is_active": true
+  },
+  {
+    "id": "v-002",
+    "name": "CloudInfra Technologies Inc.",
+    "code": "CLOUD-IT",
+    "tax_id": "98-7654321",
+    "payment_terms": "net 30",
+    "bank_account": "1234567890",
+    "bank_routing": "021000021",
+    "contact_email": "billing@cloudinfra.io",
+    "risk_score": 8.0,
+    "is_active": true
+  },
+  {
+    "id": "v-003",
+    "name": "Global Office Supplies Corp.",
+    "code": "GLOBOFF",
+    "tax_id": "55-1234567",
+    "payment_terms": "net 45",
+    "bank_account": "5544332211",
+    "bank_routing": "071000013",
+    "contact_email": "invoices@globaloffice.com",
+    "risk_score": 3.0,
+    "is_active": true
+  },
+  {
+    "id": "v-004",
+    "name": "Premier Consulting Group",
+    "code": "PREM-CON",
+    "tax_id": "33-9876543",
+    "payment_terms": "net 30",
+    "bank_account": "9988776655",
+    "bank_routing": "021000021",
+    "contact_email": "finance@premierconsulting.com",
+    "risk_score": 12.0,
+    "is_active": true
+  },
+  {
+    "id": "v-005",
+    "name": "DataStream Analytics LLC",
+    "code": "DATASTR",
+    "tax_id": "44-5678901",
+    "payment_terms": "2/10 net 30",
+    "bank_account": "7766554433",
+    "bank_routing": "021000021",
+    "contact_email": "ap@datastreamanalytics.com",
+    "risk_score": 6.0,
+    "is_active": true
+  }
+]

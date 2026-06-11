@@ -1,0 +1,85 @@
+[
+  {
+    "po_number": "PO-2024-001",
+    "vendor_code": "ACME-SW",
+    "total_amount": 15600.00,
+    "currency": "USD",
+    "status": "open",
+    "department": "Engineering",
+    "cost_center": "CC-ENG-001",
+    "gl_account": "64000-Software-Licenses",
+    "approved_by": "cto@company.com",
+    "notes": "Q1 2024 software licensing and implementation",
+    "line_items": [
+      {"description": "Enterprise License - Q1 2024", "quantity": 1, "unit_price": 8500.00, "total_price": 8500.00},
+      {"description": "Professional Implementation", "quantity": 1, "unit_price": 3200.00, "total_price": 3200.00},
+      {"description": "Training Package (5 users)", "quantity": 5, "unit_price": 360.00, "total_price": 1800.00},
+      {"description": "Support & Maintenance (3 months)", "quantity": 3, "unit_price": 700.00, "total_price": 2100.00}
+    ]
+  },
+  {
+    "po_number": "PO-2024-002",
+    "vendor_code": "CLOUD-IT",
+    "total_amount": 42000.00,
+    "currency": "USD",
+    "status": "open",
+    "department": "IT Operations",
+    "cost_center": "CC-ITO-002",
+    "gl_account": "64500-Cloud-Infrastructure",
+    "approved_by": "cio@company.com",
+    "notes": "Annual cloud infrastructure contract",
+    "line_items": [
+      {"description": "Compute Instances (12 months)", "quantity": 12, "unit_price": 2500.00, "total_price": 30000.00},
+      {"description": "Storage - 50TB (12 months)", "quantity": 12, "unit_price": 500.00, "total_price": 6000.00},
+      {"description": "Network Bandwidth - 10Gbps", "quantity": 12, "unit_price": 500.00, "total_price": 6000.00}
+    ]
+  },
+  {
+    "po_number": "PO-2024-003",
+    "vendor_code": "GLOBOFF",
+    "total_amount": 3250.00,
+    "currency": "USD",
+    "status": "open",
+    "department": "Operations",
+    "cost_center": "CC-OPS-003",
+    "gl_account": "62000-Office-Supplies",
+    "approved_by": "ops_manager@company.com",
+    "line_items": [
+      {"description": "Printer Paper - Case (5 reams)", "quantity": 20, "unit_price": 45.00, "total_price": 900.00},
+      {"description": "Ergonomic Chairs", "quantity": 5, "unit_price": 350.00, "total_price": 1750.00},
+      {"description": "Whiteboard Markers Set", "quantity": 10, "unit_price": 12.00, "total_price": 120.00},
+      {"description": "Misc Office Supplies", "quantity": 1, "unit_price": 480.00, "total_price": 480.00}
+    ]
+  },
+  {
+    "po_number": "PO-2024-004",
+    "vendor_code": "PREM-CON",
+    "total_amount": 28500.00,
+    "currency": "USD",
+    "status": "open",
+    "department": "Strategy",
+    "cost_center": "CC-STR-004",
+    "gl_account": "65000-Professional-Services",
+    "approved_by": "ceo@company.com",
+    "notes": "Q1 strategic consulting engagement",
+    "line_items": [
+      {"description": "Senior Consultant (30 days)", "quantity": 30, "unit_price": 850.00, "total_price": 25500.00},
+      {"description": "Deliverable: Market Analysis Report", "quantity": 1, "unit_price": 3000.00, "total_price": 3000.00}
+    ]
+  },
+  {
+    "po_number": "PO-2024-005",
+    "vendor_code": "DATASTR",
+    "total_amount": 9800.00,
+    "currency": "USD",
+    "status": "open",
+    "department": "Data Science",
+    "cost_center": "CC-DS-005",
+    "gl_account": "64200-Analytics-Tools",
+    "approved_by": "cdo@company.com",
+    "line_items": [
+      {"description": "Analytics Platform License (annual)", "quantity": 1, "unit_price": 7200.00, "total_price": 7200.00},
+      {"description": "Data Pipeline Connectors (5x)", "quantity": 5, "unit_price": 520.00, "total_price": 2600.00}
+    ]
+  }
+]

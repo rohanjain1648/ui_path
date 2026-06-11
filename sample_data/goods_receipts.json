@@ -1,0 +1,32 @@
+[
+  {
+    "gr_number": "GR-2024-001",
+    "po_number": "PO-2024-001",
+    "received_amount": 15600.00,
+    "received_by": "it_manager@company.com",
+    "line_items": [
+      {"description": "Enterprise License - Q1 2024", "quantity": 1, "total_price": 8500.00, "confirmed": true},
+      {"description": "Professional Implementation", "quantity": 1, "total_price": 3200.00, "confirmed": true},
+      {"description": "Training Package (5 users)", "quantity": 5, "total_price": 1800.00, "confirmed": true},
+      {"description": "Support & Maintenance (3 months)", "quantity": 3, "total_price": 2100.00, "confirmed": true}
+    ]
+  },
+  {
+    "gr_number": "GR-2024-002",
+    "po_number": "PO-2024-002",
+    "received_amount": 42000.00,
+    "received_by": "infra_team@company.com",
+    "line_items": [
+      {"description": "Cloud Infrastructure Services", "quantity": 1, "total_price": 42000.00, "confirmed": true}
+    ]
+  },
+  {
+    "gr_number": "GR-2024-003",
+    "po_number": "PO-2024-003",
+    "received_amount": 3250.00,
+    "received_by": "office_admin@company.com",
+    "line_items": [
+      {"description": "Office Supplies", "quantity": 1, "total_price": 3250.00, "confirmed": true}
+    ]
+  }
+]
