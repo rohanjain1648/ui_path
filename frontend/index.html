@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IntelliFlow AP — Command Center</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    .kpi-card { background: linear-gradient(135deg, #1e293b 0%, #1a2540 100%); border: 1px solid #334155; border-radius: 12px; }
+    .status-badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+    .pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .slide-in { animation: slideIn 0.3s ease-out; }
+    @keyframes slideIn { from{transform:translateY(-10px);opacity:0} to{transform:translateY(0);opacity:1} }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    .pipeline-step { position: relative; }
+    .pipeline-step:not(:last-child)::after { content:''; position:absolute; top:50%; right:-20px; width:20px; height:2px; background:#334155; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<header class="border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">AP</div>
+    <div>
+      <h1 class="text-white font-semibold text-lg">IntelliFlow AP</h1>
+      <p class="text-slate-400 text-xs">AI-Native Accounts Payable · UiPath Maestro BPMN</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+    <span id="live-indicator" class="flex items-center gap-1.5 text-emerald-400 text-xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 pulse"></span> LIVE
+    </span>
+    <span class="text-slate-400 text-xs" id="last-refresh">Loading...</span>
+    <button onclick="submitDemo()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors">
+      + Demo Invoice
+    </button>
+  </div>
+</header>
+
+<main class="px-6 py-6 max-w-screen-2xl mx-auto space-y-6">
+
+  <!-- KPI Row -->
+  <section class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4">
+    <div class="kpi-card p-4 col-span-1">
+      <p class="text-slate-400 text-xs uppercase tracking-wide">Total Invoices</p>
+      <p class="text-3xl font-bold text-white mt-1" id="kpi-total">—</p>
+    </div>
+    <div class="kpi-card p-4 col-span-1">
+      <p class="text-slate-400 text-xs uppercase tracking-wide">Total Value</p>
+      <p class="text-3xl font-bold text-emerald-400 mt-1" id="kpi-amount">—</p>
+    </div>
+    <div class="kpi-card p-4 col-span-1">
+      <p class="text-slate-400 text-xs uppercase tracking-wide">Auto-Approve Rate</p>
+      <p class="text-3xl font-bold text-blue-400 mt-1" id="kpi-auto">—</p>
+    </div>
+    <div class="kpi-card p-4 col-span-1">
+      <p class="text-slate-400 text-xs uppercase tracking-wide">AI Confidence</p>
+      <p class="text-3xl font-bold text-violet-400 mt-1" id="kpi-confidence">—</p>
+    </div>
+    <div class="kpi-card p-4 col-span-1">
+      <p class="text-slate-400 text-xs uppercase tracking-wide">Open Exceptions</p>
+      <p class="text-3xl font-bold text-amber-400 mt-1" id="kpi-exceptions">—</p>
+    </div>
+    <div class="kpi-card p-4 col-span-1">
+      <p class="text-slate-400 text-xs uppercase tracking-wide">Discounts Captured</p>
+      <p class="text-3xl font-bold text-emerald-400 mt-1" id="kpi-discounts">—</p>
+    </div>
+  </section>
+
+  <!-- BPMN Pipeline Visualization -->
+  <section class="card p-6">
+    <h2 class="text-white font-semibold mb-5 flex items-center gap-2">
+      <span class="text-blue-400">⬡</span> Maestro BPMN Pipeline — Live Status
+    </h2>
+    <div class="flex items-center justify-between overflow-x-auto pb-2 gap-1">
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-slate-700 border-2 border-slate-500 flex items-center justify-center text-xl">📥</div>
+        <span class="text-slate-300 text-xs text-center">Received</span>
+        <span class="text-white font-bold text-sm" id="pipe-received">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-violet-900 border-2 border-violet-500 flex items-center justify-center text-xl">🤖</div>
+        <span class="text-slate-300 text-xs text-center">AI Extract</span>
+        <span class="text-white font-bold text-sm" id="pipe-extracting">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-blue-900 border-2 border-blue-500 flex items-center justify-center text-xl">🔗</div>
+        <span class="text-slate-300 text-xs text-center">3-Way Match</span>
+        <span class="text-white font-bold text-sm" id="pipe-matching">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-amber-900 border-2 border-amber-500 flex items-center justify-center text-xl">⚠️</div>
+        <span class="text-slate-300 text-xs text-center">Exceptions</span>
+        <span class="text-white font-bold text-sm" id="pipe-exception">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-orange-900 border-2 border-orange-500 flex items-center justify-center text-xl">👤</div>
+        <span class="text-slate-300 text-xs text-center">Approval</span>
+        <span class="text-white font-bold text-sm" id="pipe-approval">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-emerald-900 border-2 border-emerald-500 flex items-center justify-center text-xl">✅</div>
+        <span class="text-slate-300 text-xs text-center">Approved</span>
+        <span class="text-white font-bold text-sm" id="pipe-approved">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px] mr-5">
+        <div class="w-12 h-12 rounded-full bg-teal-900 border-2 border-teal-500 flex items-center justify-center text-xl">🏦</div>
+        <span class="text-slate-300 text-xs text-center">ERP Posted</span>
+        <span class="text-white font-bold text-sm" id="pipe-erp">—</span>
+      </div>
+      <div class="pipeline-step flex flex-col items-center gap-2 min-w-[90px]">
+        <div class="w-12 h-12 rounded-full bg-green-900 border-2 border-green-500 flex items-center justify-center text-xl">💸</div>
+        <span class="text-slate-300 text-xs text-center">Payment Sched</span>
+        <span class="text-white font-bold text-sm" id="pipe-payment">—</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Middle Row: Chart + Exceptions -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Channel Chart -->
+    <div class="card p-5 col-span-1">
+      <h2 class="text-white font-semibold mb-4 text-sm">Invoice Volume by Channel</h2>
+      <canvas id="channel-chart" height="200"></canvas>
+    </div>
+
+    <!-- Exceptions Queue -->
+    <div class="card p-5 col-span-2">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-white font-semibold text-sm">Live Exception Queue</h2>
+        <span class="text-amber-400 text-xs font-semibold" id="exc-count-badge">— open</span>
+      </div>
+      <div id="exception-list" class="space-y-2 max-h-72 overflow-y-auto">
+        <p class="text-slate-500 text-sm text-center py-8">Loading exceptions...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Invoice Feed -->
+  <section class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-white font-semibold text-sm">Invoice Processing Feed</h2>
+      <div class="flex gap-2">
+        <select id="status-filter" onchange="loadInvoices()" class="bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-600">
+          <option value="">All statuses</option>
+          <option value="received">Received</option>
+          <option value="extracting">Extracting</option>
+          <option value="extracted">Extracted</option>
+          <option value="exception">Exception</option>
+          <option value="pending_approval">Pending Approval</option>
+          <option value="approved">Approved</option>
+          <option value="payment_scheduled">Payment Scheduled</option>
+        </select>
+      </div>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-slate-400 text-xs uppercase tracking-wide border-b border-slate-700">
+            <th class="text-left pb-3 pr-4">Vendor</th>
+            <th class="text-left pb-3 pr-4">Invoice #</th>
+            <th class="text-right pb-3 pr-4">Amount</th>
+            <th class="text-left pb-3 pr-4">PO Ref</th>
+            <th class="text-center pb-3 pr-4">Confidence</th>
+            <th class="text-center pb-3 pr-4">Risk</th>
+            <th class="text-left pb-3 pr-4">Status</th>
+            <th class="text-left pb-3">Channel</th>
+          </tr>
+        </thead>
+        <tbody id="invoice-tbody" class="divide-y divide-slate-800">
+          <tr><td colspan="8" class="py-8 text-center text-slate-500">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Pending Approvals -->
+  <section class="card p-5">
+    <h2 class="text-white font-semibold text-sm mb-4">Pending Approvals — Human-in-the-Loop</h2>
+    <div id="approval-list" class="space-y-3">
+      <p class="text-slate-500 text-sm text-center py-4">No pending approvals</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- Demo Submit Modal -->
+<div id="demo-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden">
+  <div class="card p-6 w-full max-w-lg mx-4 slide-in">
+    <h3 class="text-white font-semibold mb-4">Submit Demo Invoice</h3>
+    <textarea id="demo-text" rows="10" class="w-full bg-slate-900 text-slate-300 text-xs p-3 rounded-lg border border-slate-600 font-mono resize-none" placeholder="Paste invoice text..."></textarea>
+    <div class="flex gap-2 mt-4">
+      <button onclick="sendDemoInvoice()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors">
+        Submit to Pipeline
+      </button>
+      <button onclick="useSample()" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white rounded-lg text-sm transition-colors">
+        Use Sample
+      </button>
+      <button onclick="closeModal()" class="px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors">
+        Cancel
+      </button>
+    </div>
+    <p id="submit-status" class="mt-3 text-xs text-center text-slate-400"></p>
+  </div>
+</div>
+
+<script>
+const API = '';
+let channelChart = null;
+
+const STATUS_COLORS = {
+  received: 'bg-slate-600 text-slate-200',
+  extracting: 'bg-violet-900 text-violet-300',
+  extracted: 'bg-blue-900 text-blue-300',
+  matching: 'bg-blue-800 text-blue-200',
+  matched: 'bg-emerald-900 text-emerald-300',
+  exception: 'bg-amber-900 text-amber-300',
+  pending_approval: 'bg-orange-900 text-orange-300',
+  approved: 'bg-emerald-800 text-emerald-200',
+  rejected: 'bg-red-900 text-red-300',
+  posted_erp: 'bg-teal-900 text-teal-300',
+  payment_scheduled: 'bg-green-900 text-green-300',
+  paid: 'bg-green-700 text-green-100',
+};
+
+const RISK_COLOR = s => s >= 70 ? 'text-red-400' : s >= 40 ? 'text-amber-400' : 'text-emerald-400';
+const fmt = n => n == null ? '—' : Number(n).toLocaleString('en-US', {style:'currency',currency:'USD',maximumFractionDigits:0});
+const fmtPct = n => n == null ? '—' : `${Number(n).toFixed(1)}%`;
+
+async function loadDashboard() {
+  try {
+    const [kpi, channels, exceptions, approvals] = await Promise.all([
+      fetch(`${API}/api/analytics/dashboard`).then(r=>r.json()),
+      fetch(`${API}/api/analytics/channel-breakdown`).then(r=>r.json()),
+      fetch(`${API}/api/exceptions?status=open&limit=20`).then(r=>r.json()),
+      fetch(`${API}/api/approvals`).then(r=>r.json()),
+    ]);
+
+    // KPIs
+    document.getElementById('kpi-total').textContent = kpi.summary.total_invoices.toLocaleString();
+    document.getElementById('kpi-amount').textContent = fmt(kpi.summary.total_amount_usd);
+    document.getElementById('kpi-auto').textContent = fmtPct(kpi.summary.auto_approve_rate_pct);
+    document.getElementById('kpi-confidence').textContent = fmtPct(kpi.summary.avg_extraction_confidence);
+    document.getElementById('kpi-exceptions').textContent = kpi.exceptions.open.toLocaleString();
+    document.getElementById('kpi-discounts').textContent = fmt(kpi.payments.early_payment_discounts_captured_usd);
+
+    // Pipeline
+    const p = kpi.pipeline;
+    document.getElementById('pipe-received').textContent = p.received || 0;
+    document.getElementById('pipe-extracting').textContent = (p.extracting || 0) + (p.extracted || 0);
+    document.getElementById('pipe-matching').textContent = p.matching || 0;
+    document.getElementById('pipe-exception').textContent = p.exception || 0;
+    document.getElementById('pipe-approval').textContent = p.pending_approval || 0;
+    document.getElementById('pipe-approved').textContent = (p.approved || 0) + (p.matched || 0);
+    document.getElementById('pipe-erp').textContent = p.posted_erp || 0;
+    document.getElementById('pipe-payment').textContent = p.payment_scheduled || 0;
+
+    // Channel chart
+    renderChannelChart(channels);
+
+    // Exception list
+    renderExceptions(exceptions);
+    document.getElementById('exc-count-badge').textContent = `${kpi.exceptions.open} open`;
+
+    // Approval list
+    renderApprovals(approvals);
+
+    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    console.error('Dashboard load error:', e);
+    document.getElementById('last-refresh').textContent = 'API offline — start backend';
+  }
+}
+
+function renderChannelChart(channels) {
+  const ctx = document.getElementById('channel-chart').getContext('2d');
+  const labels = channels.map(c => c.channel);
+  const data = channels.map(c => c.count);
+
+  if (channelChart) channelChart.destroy();
+  channelChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: ['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b'],
+        borderColor: '#1e293b',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+function renderExceptions(exceptions) {
+  const el = document.getElementById('exception-list');
+  if (!exceptions.length) {
+    el.innerHTML = '<p class="text-slate-500 text-sm text-center py-6">No open exceptions — great work!</p>';
+    return;
+  }
+  el.innerHTML = exceptions.map(e => {
+    const slaColor = e.sla_status === 'breached' ? 'text-red-400' : e.sla_status === 'at_risk' ? 'text-amber-400' : 'text-emerald-400';
+    const typeLabel = (e.exception_type || '').replace(/_/g,' ').toUpperCase();
+    return `
+      <div class="flex items-start gap-3 p-3 bg-slate-800 rounded-lg hover:bg-slate-750 transition-colors">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="status-badge bg-amber-900 text-amber-300">${typeLabel}</span>
+            <span class="${slaColor} text-xs font-semibold">SLA: ${e.sla_status || '—'}</span>
+          </div>
+          <p class="text-slate-300 text-xs mt-1 truncate">${e.description || ''}</p>
+          <p class="text-slate-500 text-xs mt-0.5">→ ${e.assigned_to || 'Unassigned'}</p>
+        </div>
+        <button onclick="resolveException('${e.id}')" class="text-xs px-3 py-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-md flex-shrink-0 transition-colors">
+          Resolve
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function renderApprovals(approvals) {
+  const el = document.getElementById('approval-list');
+  if (!approvals.length) {
+    el.innerHTML = '<p class="text-slate-500 text-sm text-center py-4">No pending approvals</p>';
+    return;
+  }
+  el.innerHTML = approvals.map(a => `
+    <div class="flex items-center gap-4 p-4 bg-slate-800 rounded-lg">
+      <div class="flex-1">
+        <p class="text-white text-sm font-semibold">${a.vendor_name || 'Unknown Vendor'} · <span class="text-slate-400">${a.invoice_number || 'N/A'}</span></p>
+        <p class="text-slate-400 text-xs">${fmt(a.amount)} ${a.currency || 'USD'} · Requires <span class="text-orange-400 font-semibold">${(a.approval_level || '').toUpperCase()}</span> approval</p>
+        <p class="text-slate-500 text-xs">${a.approver_name || a.approver_email}</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="decideApproval('${a.approval_id}', true)" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs rounded-lg font-semibold transition-colors">
+          Approve
+        </button>
+        <button onclick="decideApproval('${a.approval_id}', false)" class="px-4 py-1.5 bg-red-700 hover:bg-red-600 text-white text-xs rounded-lg font-semibold transition-colors">
+          Reject
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadInvoices() {
+  const status = document.getElementById('status-filter').value;
+  const url = status ? `${API}/api/invoices?status=${status}&limit=30` : `${API}/api/invoices?limit=30`;
+  const data = await fetch(url).then(r=>r.json()).catch(()=>({invoices:[]}));
+  const tbody = document.getElementById('invoice-tbody');
+  if (!data.invoices.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-500">No invoices yet — click "Demo Invoice" to start</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.invoices.map(inv => {
+    const badge = STATUS_COLORS[inv.status] || 'bg-slate-700 text-slate-300';
+    const conf = inv.extraction_confidence;
+    const risk = inv.anomaly_score;
+    return `
+      <tr class="hover:bg-slate-800/50 transition-colors">
+        <td class="py-3 pr-4 text-white font-medium truncate max-w-[150px]">${inv.vendor_name || '—'}</td>
+        <td class="py-3 pr-4 text-slate-300 font-mono text-xs">${inv.invoice_number || '—'}</td>
+        <td class="py-3 pr-4 text-right text-white font-semibold">${fmt(inv.total_amount)}</td>
+        <td class="py-3 pr-4 text-slate-400 font-mono text-xs">${inv.po_reference || '—'}</td>
+        <td class="py-3 pr-4 text-center">
+          ${conf != null ? `<span class="${conf>=80?'text-emerald-400':conf>=60?'text-amber-400':'text-red-400'} font-semibold text-xs">${conf.toFixed(0)}%</span>` : '—'}
+        </td>
+        <td class="py-3 pr-4 text-center">
+          ${risk != null ? `<span class="${RISK_COLOR(risk)} font-semibold text-xs">${risk.toFixed(0)}</span>` : '—'}
+        </td>
+        <td class="py-3 pr-4">
+          <span class="status-badge ${badge}">${(inv.status||'').replace(/_/g,' ')}</span>
+        </td>
+        <td class="py-3 text-slate-400 text-xs">${inv.source_channel || '—'}</td>
+      </tr>`;
+  }).join('');
+}
+
+async function resolveException(id) {
+  await fetch(`${API}/api/exceptions/${id}/resolve`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ resolution_notes: 'Resolved via dashboard', resolved_by: 'demo_user', action: 'approve' })
+  });
+  loadDashboard(); loadInvoices();
+}
+
+async function decideApproval(id, approved) {
+  await fetch(`${API}/api/approvals/${id}/decide`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ approved, notes: approved ? 'Approved via dashboard' : 'Rejected via dashboard', approver_name: 'Demo Approver' })
+  });
+  loadDashboard(); loadInvoices();
+}
+
+function submitDemo() { document.getElementById('demo-modal').classList.remove('hidden'); }
+function closeModal() { document.getElementById('demo-modal').classList.add('hidden'); }
+function useSample() {
+  document.getElementById('demo-text').value = `INVOICE
+
+Acme Software Solutions Ltd.
+123 Tech Street, San Francisco, CA 94105
+Tax ID: 12-3456789
+
+Bill To: Your Company Inc.
+Invoice Number: INV-2024-0847
+Invoice Date: 2024-01-15
+Due Date: 2024-02-14
+Payment Terms: 2/10 Net 30
+
+Purchase Order: PO-2024-001
+
+ITEMS:
+1. Enterprise License - Q1 2024       $8,500.00
+2. Professional Implementation        $3,200.00
+3. Training Package (5 users)         $1,800.00
+4. Support & Maintenance (3 months)   $2,100.00
+
+Subtotal: $15,600.00
+Tax (8.5%): $1,326.00
+TOTAL DUE: $16,926.00
+
+Bank: First National Bank
+Account: 9876543210
+Routing: 021000021
+
+Thank you for your business!`;
+}
+
+async function sendDemoInvoice() {
+  const text = document.getElementById('demo-text').value;
+  if (!text.trim()) return;
+  const status = document.getElementById('submit-status');
+  status.textContent = 'Submitting to pipeline...';
+  try {
+    const res = await fetch(`${API}/api/invoices/ingest/text`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ text, source_channel: 'portal' })
+    });
+    const data = await res.json();
+    status.textContent = `Invoice ${data.id?.slice(0,8)} created — Claude is processing...`;
+    setTimeout(() => { closeModal(); loadDashboard(); loadInvoices(); }, 1500);
+  } catch(e) {
+    status.textContent = 'Error: is the backend running? (python -m uvicorn backend.main:app)';
+  }
+}
+
+// Auto-refresh every 5 seconds
+async function tick() { await Promise.all([loadDashboard(), loadInvoices()]); }
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>
