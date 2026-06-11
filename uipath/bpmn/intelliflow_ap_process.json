@@ -1,0 +1,164 @@
+{
+  "process": {
+    "name": "IntelliFlow AP - Accounts Payable Automation",
+    "version": "1.0.0",
+    "track": "UiPath Maestro BPMN - Track 2",
+    "description": "End-to-end invoice processing orchestrated by UiPath Maestro BPMN with Claude AI intelligence",
+    "backend_base_url": "http://localhost:8000"
+  },
+  "bpmn_elements": {
+    "start_events": [
+      {
+        "id": "start-email",
+        "name": "Invoice Received via Email",
+        "type": "MessageStartEvent",
+        "trigger": "Email arrives in AP inbox"
+      },
+      {
+        "id": "start-portal",
+        "name": "Invoice Submitted via Portal",
+        "type": "MessageStartEvent",
+        "trigger": "Vendor uploads invoice to self-service portal"
+      },
+      {
+        "id": "start-edi",
+        "name": "EDI 810 Received",
+        "type": "MessageStartEvent",
+        "trigger": "EDI transaction received"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "task-1-ingest",
+        "name": "Ingest & Register Invoice",
+        "type": "ServiceTask",
+        "implementation": "REST",
+        "endpoint": "POST /api/invoices/ingest/text",
+        "actor": "UiPath RPA Bot",
+        "output_variables": ["invoice_id", "invoice_status"]
+      },
+      {
+        "id": "task-2-extract",
+        "name": "AI Extract Invoice Data",
+        "type": "ServiceTask",
+        "implementation": "REST",
+        "endpoint": "POST /api/invoices/{invoice_id}/extract",
+        "actor": "Claude Agent (claude-sonnet-4-6)",
+        "description": "Claude extracts vendor, amount, PO reference, line items with confidence scoring",
+        "output_variables": ["extraction_confidence", "vendor_name", "total_amount", "po_reference"]
+      },
+      {
+        "id": "gw-quality",
+        "name": "Quality Gate: Confidence ≥ 70%?",
+        "type": "ExclusiveGateway",
+        "conditions": [
+          {"outcome": "pass", "expression": "extraction_confidence >= 70", "next": "task-3-match"},
+          {"outcome": "fail", "expression": "extraction_confidence < 70", "next": "task-manual-entry"}
+        ]
+      },
+      {
+        "id": "task-manual-entry",
+        "name": "Manual Data Entry Queue",
+        "type": "UserTask",
+        "assignee_role": "ap_clerk",
+        "form_fields": ["vendor_name", "invoice_number", "total_amount", "po_reference"],
+        "description": "AP clerk manually enters/corrects low-confidence extraction"
+      },
+      {
+        "id": "task-3-match",
+        "name": "3-Way PO Match",
+        "type": "ServiceTask",
+        "implementation": "REST",
+        "endpoint": "POST /api/invoices/{invoice_id}/match",
+        "actor": "Matching Engine + RPA (ERP lookup)",
+        "description": "Invoice matched against PO and goods receipt with tolerance checking",
+        "output_variables": ["match_score", "matched", "auto_approvable", "discrepancies"]
+      },
+      {
+        "id": "gw-match",
+        "name": "Match Result Gateway",
+        "type": "ExclusiveGateway",
+        "conditions": [
+          {"outcome": "auto_approve", "expression": "auto_approvable == true", "next": "task-5-post-erp"},
+          {"outcome": "needs_approval", "expression": "matched == true AND auto_approvable == false", "next": "task-4-approval"},
+          {"outcome": "exception", "expression": "matched == false", "next": "task-4-exception"}
+        ]
+      },
+      {
+        "id": "task-4-exception",
+        "name": "AP Exception Resolution",
+        "type": "UserTask",
+        "assignee_role": "dynamic (routed by exception type)",
+        "sla_hours": 24,
+        "form_fields": ["resolution_action", "resolution_notes"],
+        "description": "AP team resolves discrepancy — AI provides recommendation",
+        "uipath_action": "Send notification + create human task in Action Center"
+      },
+      {
+        "id": "task-4-approval",
+        "name": "Manager / CFO Approval",
+        "type": "UserTask",
+        "assignee_role": "dynamic (based on invoice amount)",
+        "sla_hours": 48,
+        "routing_rules": [
+          {"condition": "amount <= 10000", "approver": "Department Manager"},
+          {"condition": "amount <= 50000", "approver": "Finance Director"},
+          {"condition": "amount > 50000", "approver": "CFO"}
+        ],
+        "uipath_action": "UiPath Action Center approval task + email notification"
+      },
+      {
+        "id": "task-5-post-erp",
+        "name": "Post to ERP & GL Code",
+        "type": "ServiceTask",
+        "implementation": "REST",
+        "endpoint": "POST /api/invoices/{invoice_id}/post-erp",
+        "actor": "RPA Bot + AI GL Coder",
+        "description": "Post journal entry, auto-assign GL account using AI inference"
+      },
+      {
+        "id": "task-6-payment",
+        "name": "Schedule Payment (Optimized)",
+        "type": "ServiceTask",
+        "implementation": "REST",
+        "endpoint": "POST /api/invoices/{invoice_id}/post-erp",
+        "actor": "Payment Optimizer Agent",
+        "description": "Claude calculates optimal payment date to capture early-pay discounts"
+      },
+      {
+        "id": "task-7-notify",
+        "name": "Notify Vendor",
+        "type": "ServiceTask",
+        "implementation": "Email via SMTP",
+        "actor": "RPA Bot",
+        "description": "Send payment confirmation with scheduled date to vendor"
+      }
+    ],
+    "end_events": [
+      {
+        "id": "end-paid",
+        "name": "Invoice Processed & Payment Scheduled",
+        "type": "EndEvent"
+      },
+      {
+        "id": "end-rejected",
+        "name": "Invoice Rejected",
+        "type": "EndEvent"
+      }
+    ]
+  },
+  "uipath_components": {
+    "maestro_bpmn": "Process orchestration and flow control",
+    "action_center": "Human task delivery for approvals and exceptions",
+    "agent_builder": "Claude-powered extraction and anomaly detection agents",
+    "rpa_robots": "ERP integration, email monitoring, payment execution",
+    "api_workflows": "Webhook triggers, third-party integrations"
+  },
+  "external_agents": {
+    "claude_sonnet_46": {
+      "role": "Document intelligence, anomaly detection, GL coding, payment optimization",
+      "framework": "Anthropic SDK with tool_use and prompt caching",
+      "integration": "REST API service tasks in BPMN"
+    }
+  }
+}
