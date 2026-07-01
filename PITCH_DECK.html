@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntelliFlow AP — UiPath AgentHack 2025</title>
+<style>
+/* ── Reset & root ─────────────────────────────────────── */
+:root {
+  --orange:  #FF6D00;
+  --dark:    #0D0D14;
+  --card:    #13131C;
+  --border:  #1E1E30;
+  --text:    #E8E8F0;
+  --muted:   #8888A8;
+  --green:   #00C853;
+  --blue:    #448AFF;
+  --purple:  #7C4DFF;
+  --red:     #FF5252;
+  --yellow:  #FFD740;
+
+  /* A4 portrait: 210mm × 297mm */
+  --page-w: 210mm;
+  --page-h: 297mm;
+}
+
+* {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+body {
+  background: #111;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: var(--text);
+}
+
+/* ── Slide = one A4 page ─────────────────────────────── */
+.slide {
+  width: var(--page-w);
+  height: var(--page-h);
+  background: var(--dark);
+  margin: 0 auto 24px;
+  padding: 18mm 16mm 14mm;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  break-after: page;
+  page-break-after: always;
+}
+
+/* corner accent */
+.slide::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6mm; height: 100%;
+  background: var(--orange);
+  opacity: 0.08;
+}
+.slide::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 6mm; height: 30mm;
+  background: var(--orange);
+}
+
+/* ── Fixed nav (screen only) ─────────────────────────── */
+#nav {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 999;
+}
+#nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: color 0.2s;
+  flex-direction: row-reverse;
+}
+#nav a .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--border);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+#nav a .label { opacity: 0; transition: opacity 0.2s; }
+#nav a:hover .label, #nav a.active .label { opacity: 1; }
+#nav a:hover .dot, #nav a.active .dot {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+
+/* ── Print hint (screen only) ────────────────────────── */
+#print-hint {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13,13,20,0.95);
+  border: 1px solid var(--border);
+  border-radius: 32px;
+  padding: 8px 20px;
+  font-size: 12px;
+  color: var(--muted);
+  z-index: 999;
+}
+#print-hint kbd {
+  background: var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: monospace;
+  color: var(--text);
+  font-size: 11px;
+}
+
+/* ── Typography ──────────────────────────────────────── */
+.eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-left: 8mm; /* clear the sidebar */
+  margin-bottom: 5mm;
+}
+
+.slide-title {
+  font-size: 26pt;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-left: 8mm;
+  margin-bottom: 3mm;
+}
+.slide-title em { color: var(--orange); font-style: normal; }
+
+.slide-sub {
+  font-size: 10pt;
+  color: var(--muted);
+  margin-left: 8mm;
+  margin-bottom: 7mm;
+  line-height: 1.55;
+  max-width: 155mm;
+}
+
+/* ── Layout primitives ───────────────────────────────── */
+.body { flex: 1; margin-left: 8mm; display: flex; flex-direction: column; min-height: 0; }
+.cols { display: grid; gap: 4mm; }
+.cols-2 { grid-template-columns: 1fr 1fr; }
+.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.cols-6-4 { grid-template-columns: 3fr 2fr; }
+.cols-4-6 { grid-template-columns: 2fr 3fr; }
+
+/* ── Card ────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4mm;
+  padding: 4mm 5mm;
+}
+.card.lo { border-left: 2px solid var(--orange); }
+.card.lg { border-left: 2px solid var(--green); }
+.card.lb { border-left: 2px solid var(--blue); }
+.card.lp { border-left: 2px solid var(--purple); }
+.card.lr { border-left: 2px solid var(--red); }
+.card h3 {
+  font-size: 7.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 2mm;
+}
+.card p { font-size: 9pt; line-height: 1.55; color: var(--text); }
+
+/* ── Stat ────────────────────────────────────────────── */
+.stat-num {
+  font-size: 32pt;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.stat-lbl { font-size: 8pt; color: var(--muted); margin-top: 1mm; line-height: 1.4; }
+.stat-delta { font-size: 7.5pt; margin-top: 2mm; }
+.up { color: var(--green); }
+.dn { color: var(--red); }
+
+/* ── Badge ───────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 20px;
+  font-size: 7pt;
+  font-weight: 700;
+}
+.bo { background: rgba(255,109,0,.15); color: var(--orange); }
+.bg { background: rgba(0,200,83,.12); color: var(--green); }
+.bb { background: rgba(68,138,255,.12); color: var(--blue); }
+.bp { background: rgba(124,77,255,.12); color: var(--purple); }
+.br { background: rgba(255,82,82,.12); color: var(--red); }
+
+/* ── Flow ────────────────────────────────────────────── */
+.flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+.flow-step {
+  flex: 1;
+  text-align: center;
+  padding: 2.5mm 1mm;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 3mm;
+  font-size: 7.5pt;
+  font-weight: 600;
+  min-width: 0;
+}
+.flow-step .icon { font-size: 14pt; margin-bottom: 1mm; display: block; }
+.flow-step .lbl { color: var(--muted); font-size: 6.5pt; font-weight: 400; margin-top: 1mm; }
+.flow-step.hi { border-color: var(--orange); background: rgba(255,109,0,0.07); }
+.flow-arr { color: var(--border); font-size: 12pt; padding: 0 1mm; display: flex; align-items: center; flex-shrink: 0; }
+
+/* ── Table ───────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+th {
+  background: var(--card);
+  color: var(--muted);
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2mm 3mm;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+td { padding: 2mm 3mm; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+
+/* ── Check list ──────────────────────────────────────── */
+.clist { list-style: none; }
+.clist li {
+  display: flex; align-items: flex-start; gap: 2mm;
+  padding: 1.5mm 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 8.5pt;
+  line-height: 1.5;
+}
+.clist li:last-child { border-bottom: none; }
+.clist .ico {
+  width: 5mm; height: 5mm;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8pt;
+  flex-shrink: 0;
+  margin-top: 0.3mm;
+}
+.io { background: rgba(255,109,0,.15); color: var(--orange); }
+.ig { background: rgba(0,200,83,.12); color: var(--green); }
+.ib { background: rgba(68,138,255,.12); color: var(--blue); }
+.ip { background: rgba(124,77,255,.12); color: var(--purple); }
+
+/* ── Progress ────────────────────────────────────────── */
+.prog-wrap { margin-bottom: 3mm; }
+.prog-label { display: flex; justify-content: space-between; font-size: 7.5pt; color: var(--muted); margin-bottom: 1mm; }
+.prog-label strong { color: var(--text); }
+.prog-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 2px; }
+
+/* ── Slide-specific ──────────────────────────────────── */
+
+/* SLIDE 1 — Cover */
+#s1 {
+  justify-content: flex-end;
+  background:
+    radial-gradient(ellipse 90% 60% at 50% 20%, rgba(255,109,0,0.09) 0%, transparent 55%),
+    var(--dark);
+}
+#s1::after { width: 100%; height: 4px; top: auto; bottom: 0; left: 0; }
+.cover-logo { font-size: 42pt; font-weight: 900; letter-spacing: -0.03em; margin-bottom: 3mm; }
+.cover-logo em { color: var(--orange); font-style: normal; }
+.cover-tag { font-size: 11pt; color: var(--muted); line-height: 1.5; max-width: 155mm; margin-bottom: 8mm; }
+.cover-pills { display: flex; flex-wrap: wrap; gap: 2mm; margin-bottom: 8mm; }
+.cpill {
+  padding: 1.5mm 4mm;
+  border-radius: 20mm;
+  border: 1px solid var(--border);
+  font-size: 8pt;
+  font-weight: 500;
+  color: var(--muted);
+}
+.cpill.on { border-color: var(--orange); color: var(--orange); background: rgba(255,109,0,.08); }
+.cover-metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 4mm; }
+.cm { background: var(--card); border: 1px solid var(--border); border-radius: 3mm; padding: 3mm 4mm; }
+.cm .val { font-size: 16pt; font-weight: 800; line-height: 1; }
+.cm .lbl { font-size: 7pt; color: var(--muted); margin-top: 1mm; }
+.cover-track-pill {
+  display: inline-block;
+  border: 1px solid var(--orange);
+  color: var(--orange);
+  padding: 1.5mm 4mm;
+  border-radius: 20mm;
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 10mm;
+}
+
+/* ── Slide page number ───────────────────────────────── */
+.pg {
+  position: absolute;
+  bottom: 6mm;
+  right: 6mm;
+  font-size: 7pt;
+  color: var(--border);
+  font-weight: 600;
+}
+
+/* ── Divider ─────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 4mm 0; }
+
+/* ── Print styles ────────────────────────────────────── */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+@media print {
+  html, body {
+    background: var(--dark) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  #nav, #print-hint { display: none !important; }
+  .slide {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    width: 210mm;
+    height: 297mm;
+    background: var(--dark) !important;
+  }
+  .card { background: var(--card) !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Fixed nav (screen only) ─────────────────────────────────────── -->
+<nav id="nav">
+  <a href="#s1"><span class="label">Cover</span><span class="dot"></span></a>
+  <a href="#s2"><span class="label">The Problem</span><span class="dot"></span></a>
+  <a href="#s3"><span class="label">Solution</span><span class="dot"></span></a>
+  <a href="#s4"><span class="label">BPMN Process</span><span class="dot"></span></a>
+  <a href="#s5"><span class="label">Groq AI</span><span class="dot"></span></a>
+  <a href="#s6"><span class="label">Human-in-Loop</span><span class="dot"></span></a>
+  <a href="#s7"><span class="label">Architecture</span><span class="dot"></span></a>
+  <a href="#s8"><span class="label">Business Impact</span><span class="dot"></span></a>
+  <a href="#s9"><span class="label">UiPath Stack</span><span class="dot"></span></a>
+  <a href="#s10"><span class="label">Roadmap</span><span class="dot"></span></a>
+</nav>
+
+<div id="print-hint">
+  <kbd>Ctrl + P</kbd> → Save as PDF &nbsp;·&nbsp; Set paper to <strong>A4 Portrait</strong>, margins <strong>None</strong>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 1 — COVER
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s1">
+  <div style="flex:1"></div>
+  <div style="margin-left:8mm">
+    <div class="cover-track-pill">UiPath AgentHack 2025 &nbsp;·&nbsp; Track 2 — Maestro BPMN</div>
+    <div class="cover-logo">Intelli<em>Flow</em> AP</div>
+    <div class="cover-tag">AI-Native Accounts Payable Orchestration — from invoice receipt to ERP posting in under 60 seconds, powered by Groq + UiPath Maestro BPMN.</div>
+    <div class="cover-pills">
+      <span class="cpill on">UiPath Maestro BPMN</span>
+      <span class="cpill on">UiPath Action Center</span>
+      <span class="cpill on">UiPath Agent Builder</span>
+      <span class="cpill">Groq LLaMA-3.3-70B</span>
+      <span class="cpill">FastAPI · SQLite</span>
+      <span class="cpill">3-Way PO Matching</span>
+    </div>
+    <div class="cover-metrics">
+      <div class="cm"><div class="val" style="color:var(--green)">75%+</div><div class="lbl">Touchless Rate</div></div>
+      <div class="cm"><div class="val" style="color:var(--orange)">&lt;60s</div><div class="lbl">Avg Processing Time</div></div>
+      <div class="cm"><div class="val" style="color:var(--blue)">$0.56</div><div class="lbl">Cost per Invoice</div></div>
+      <div class="cm"><div class="val" style="color:var(--purple)">$0</div><div class="lbl">LLM Cost (Groq Free)</div></div>
+    </div>
+  </div>
+  <span class="pg">1 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 2 — THE PROBLEM
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s2">
+  <div class="eyebrow">The Problem</div>
+  <div class="slide-title">Manual AP is <em>Broken</em></div>
+  <div class="slide-sub">Every enterprise processes invoices. Most do it the expensive, slow, error-prone way — and pay dearly for it.</div>
+
+  <div class="body">
+    <div class="cols cols-4" style="margin-bottom:5mm">
+      <div class="card lr">
+        <h3>Processing Cost</h3>
+        <div class="stat-num" style="color:var(--red)">$12.44</div>
+        <div class="stat-lbl">to process one invoice manually</div>
+        <div class="stat-delta dn">IntelliFlow: $0.56 (-96%)</div>
+      </div>
+      <div class="card lo">
+        <h3>Cycle Time</h3>
+        <div class="stat-num" style="color:var(--orange)">3–5</div>
+        <div class="stat-lbl">business days per cycle</div>
+        <div class="stat-delta up">IntelliFlow: &lt;60 seconds</div>
+      </div>
+      <div class="card lp">
+        <h3>Exception Rate</h3>
+        <div class="stat-num" style="color:var(--purple)">25%</div>
+        <div class="stat-lbl">invoices require manual handling</div>
+        <div class="stat-delta up">Reduced to 5–8% with AI</div>
+      </div>
+      <div class="card lb">
+        <h3>Fraud Losses</h3>
+        <div class="stat-num" style="color:var(--blue)">$300B</div>
+        <div class="stat-lbl">global AP fraud annually</div>
+        <div class="stat-delta up">AI anomaly detection: &lt;4h SLA</div>
+      </div>
+    </div>
+
+    <div class="cols cols-3" style="flex:1">
+      <div class="card lo">
+        <h3>Root Cause 1 — Manual Data Entry</h3>
+        <p>AP clerks hand-key invoice data from PDFs and emails. Typos, omissions, and format mismatches introduce errors at the start of every cycle — errors that compound into exceptions.</p>
+        <div class="divider"></div>
+        <p style="font-size:8pt;color:var(--orange)">IntelliFlow: Groq LLaMA-3.3-70B extracts 15+ fields with 90%+ confidence in under 2 seconds.</p>
+      </div>
+      <div class="card lp">
+        <h3>Root Cause 2 — Siloed Matching</h3>
+        <p>POs live in procurement, goods receipts in warehousing, invoices in AP — no automated 3-way reconciliation means exception discovery happens late, often after payment deadlines.</p>
+        <div class="divider"></div>
+        <p style="font-size:8pt;color:var(--purple)">IntelliFlow: Automated PO + GR + Invoice match with configurable tolerance, scored 0–100.</p>
+      </div>
+      <div class="card lb">
+        <h3>Root Cause 3 — Approval Bottlenecks</h3>
+        <p>Multi-level approvals via email chains create days of latency and eliminate early-pay discount capture — a 36% annualized return left on the table every cycle.</p>
+        <div class="divider"></div>
+        <p style="font-size:8pt;color:var(--blue)">IntelliFlow: Action Center routes to right approver instantly; decision flows back via webhook.</p>
+      </div>
+    </div>
+  </div>
+  <span class="pg">2 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 3 — SOLUTION OVERVIEW
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s3">
+  <div class="eyebrow">Solution Overview</div>
+  <div class="slide-title">AI Orchestration, End-to-<em>End</em></div>
+  <div class="slide-sub">Groq document intelligence + UiPath Maestro BPMN process orchestration + human-in-the-loop where it matters most.</div>
+
+  <div class="body">
+    <!-- Pipeline flow -->
+    <div class="flow" style="margin-bottom:5mm">
+      <div class="flow-step">
+        <span class="icon">📧</span>Invoice Ingest
+        <div class="lbl">email · PDF · portal</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step hi">
+        <span class="icon">🤖</span>Groq Extract
+        <div class="lbl">LLaMA-3.3-70B</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">
+        <span class="icon">🔍</span>3-Way Match
+        <div class="lbl">PO · GR · Invoice</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step hi">
+        <span class="icon">◇</span>Gateway
+        <div class="lbl">pass / except / approve</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step hi">
+        <span class="icon">👤</span>Action Center
+        <div class="lbl">human-in-the-loop</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">
+        <span class="icon">🏦</span>ERP Post
+        <div class="lbl">auto-triggered</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-step">
+        <span class="icon">💳</span>Payment
+        <div class="lbl">AI-optimized timing</div>
+      </div>
+    </div>
+
+    <!-- Three pillars -->
+    <div class="cols cols-3" style="margin-bottom:4mm">
+      <div class="card lo">
+        <h3>UiPath Maestro BPMN</h3>
+        <p>8 service tasks, 3 exclusive gateways, 3 user tasks orchestrate the complete lifecycle — visually, in a single process definition that business and IT both understand. Service tasks call the FastAPI backend via REST HTTP.</p>
+      </div>
+      <div class="card lb">
+        <h3>Groq AI Intelligence</h3>
+        <p>LLaMA-3.3-70B extracts 15+ invoice fields via structured function calling. Vision model handles scanned PDFs. Fast 8B model runs payment optimization at near-zero latency. Total cost: <strong style="color:var(--green)">$0</strong> on free tier.</p>
+      </div>
+      <div class="card lg">
+        <h3>Human-in-the-Loop</h3>
+        <p>Exceptions and large approvals route to UiPath Action Center with Groq AI recommendations pre-populated. Humans decide in their queue; the system acts — all via HMAC-SHA256 signed webhooks in real time.</p>
+      </div>
+    </div>
+
+    <!-- Key numbers row -->
+    <div class="cols cols-4">
+      <div class="card" style="text-align:center;padding:3mm">
+        <div style="font-size:20pt;font-weight:800;color:var(--orange)">8</div>
+        <div style="font-size:7.5pt;color:var(--muted)">BPMN Service Tasks</div>
+      </div>
+      <div class="card" style="text-align:center;padding:3mm">
+        <div style="font-size:20pt;font-weight:800;color:var(--green)">11</div>
+        <div style="font-size:7.5pt;color:var(--muted)">Invoice Status States</div>
+      </div>
+      <div class="card" style="text-align:center;padding:3mm">
+        <div style="font-size:20pt;font-weight:800;color:var(--blue)">9</div>
+        <div style="font-size:7.5pt;color:var(--muted)">Exception Types</div>
+      </div>
+      <div class="card" style="text-align:center;padding:3mm">
+        <div style="font-size:20pt;font-weight:800;color:var(--purple)">30+</div>
+        <div style="font-size:7.5pt;color:var(--muted)">REST API Endpoints</div>
+      </div>
+    </div>
+  </div>
+  <span class="pg">3 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 4 — BPMN PROCESS
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s4">
+  <div class="eyebrow">UiPath Maestro BPMN</div>
+  <div class="slide-title">The <em>8-Step</em> Invoice Process</div>
+  <div class="slide-sub">Every invoice follows the same orchestrated path. The BPMN diagram maps directly to business logic — every element is visible in Maestro.</div>
+
+  <div class="body">
+    <table style="margin-bottom:5mm">
+      <thead>
+        <tr><th>#</th><th>Element</th><th>Type</th><th>Implementation</th><th>Output Variable</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge bb">1</span></td><td><strong>Ingest &amp; Register</strong></td><td><span class="badge bo">Service Task</span></td><td>POST /api/invoices/ingest/text</td><td>invoice_id, status</td></tr>
+        <tr><td><span class="badge bb">2</span></td><td><strong>AI Data Extraction</strong></td><td><span class="badge bo">Service Task</span></td><td>POST /api/invoices/{id}/extract</td><td>confidence, po_reference</td></tr>
+        <tr><td><span class="badge bp">◇</span></td><td><strong>Quality Gate</strong></td><td><span class="badge bp">Gateway</span></td><td>confidence ≥ 70 → continue</td><td>—</td></tr>
+        <tr style="background:rgba(255,109,0,0.03)"><td><span class="badge bg">3</span></td><td><strong>Manual Data Entry</strong></td><td><span class="badge bg">User Task</span></td><td>Action Center — AP Team</td><td>corrected_data</td></tr>
+        <tr><td><span class="badge bb">4</span></td><td><strong>3-Way PO Match</strong></td><td><span class="badge bo">Service Task</span></td><td>POST /api/invoices/{id}/match</td><td>match_score, auto_approvable</td></tr>
+        <tr><td><span class="badge bp">◇</span></td><td><strong>Match Gateway</strong></td><td><span class="badge bp">Gateway</span></td><td>auto-approve / exception / approval</td><td>—</td></tr>
+        <tr style="background:rgba(255,109,0,0.03)"><td><span class="badge bg">5</span></td><td><strong>Exception Resolution</strong></td><td><span class="badge bg">User Task</span></td><td>Action Center — AP Manager</td><td>action, resolution_notes</td></tr>
+        <tr style="background:rgba(255,109,0,0.03)"><td><span class="badge bg">6</span></td><td><strong>Approval Task</strong></td><td><span class="badge bg">User Task</span></td><td>Action Center — Mgr / Dir / CFO</td><td>approved, notes</td></tr>
+        <tr><td><span class="badge bb">7</span></td><td><strong>Post to ERP</strong></td><td><span class="badge bo">Service Task</span></td><td>POST /api/invoices/{id}/post-erp</td><td>erp_ref, posted_at</td></tr>
+        <tr><td><span class="badge bb">8</span></td><td><strong>Payment Optimization</strong></td><td><span class="badge bo">Service Task</span></td><td>Groq 8B schedules early-pay window</td><td>payment_date, discount_captured</td></tr>
+      </tbody>
+    </table>
+
+    <div class="cols cols-3">
+      <div class="card lo">
+        <h3>3-Tier Approval Routing</h3>
+        <table style="margin-top:2mm">
+          <tr><td><span class="badge bg">Manager</span></td><td>$500 – $10,000</td></tr>
+          <tr><td><span class="badge bo">Director</span></td><td>$10,000 – $50,000</td></tr>
+          <tr><td><span class="badge br">CFO</span></td><td>> $50,000</td></tr>
+        </table>
+      </div>
+      <div class="card lg">
+        <h3>Auto-Approve Criteria</h3>
+        <ul class="clist" style="margin-top:1mm">
+          <li><span class="ico ig">✓</span> Match score ≥ 85 / 100</li>
+          <li><span class="ico ig">✓</span> Invoice amount ≤ $500</li>
+          <li><span class="ico ig">✓</span> Vendor identity verified</li>
+          <li><span class="ico ig">✓</span> Amount variance ≤ 2%</li>
+        </ul>
+      </div>
+      <div class="card lp">
+        <h3>State Machine — 11 States</h3>
+        <p style="font-size:8pt;line-height:1.7;margin-top:1mm">
+          received → extracting → extracted → matching →<br>
+          <span style="color:var(--green)">matched</span> / <span style="color:var(--red)">exception</span> / <span style="color:var(--yellow)">pending_approval</span> →<br>
+          approved / rejected → posted_erp →<br>
+          payment_scheduled → <span style="color:var(--green)">paid</span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <span class="pg">4 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 5 — GROQ AI LAYER
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s5">
+  <div class="eyebrow">Groq AI Intelligence Layer</div>
+  <div class="slide-title">Four AI Roles, <em>Zero</em> Cost</div>
+  <div class="slide-sub">Groq's free tier delivers enterprise-grade LLM performance — structured function calling, vision, and sub-second inference. No API budget needed.</div>
+
+  <div class="body">
+    <div class="cols cols-2" style="margin-bottom:4mm">
+      <div class="card lo">
+        <h3>Invoice Extraction &nbsp;<span class="badge bo">llama-3.3-70b-versatile</span></h3>
+        <p>Extracts 15+ fields — vendor name, invoice number, amount, line items, PO reference, GL account codes, payment terms, currency, tax — using structured function calling. Confidence score 0–100 gates the quality gateway.</p>
+      </div>
+      <div class="card lb">
+        <h3>Image / Scan OCR &nbsp;<span class="badge bb">llama-3.2-90b-vision</span></h3>
+        <p>Processes scanned PDFs and photographed invoices. Sends base64-encoded image as a vision content part. Same extraction schema — seamless downstream processing regardless of input channel.</p>
+      </div>
+      <div class="card lg">
+        <h3>Anomaly Detection &nbsp;<span class="badge bo">llama-3.3-70b-versatile</span></h3>
+        <p>Detects fraud signals, duplicate patterns, and unusual amounts. Returns a structured anomaly list — each entry has a type, severity (low/medium/high/critical), and description. Drives exception creation.</p>
+      </div>
+      <div class="card lp">
+        <h3>Payment Optimizer &nbsp;<span class="badge bp">llama-3.1-8b-instant</span></h3>
+        <p>Analyzes discount terms against cash flow to recommend optimal payment date. A "2/10 Net 30" term correctly captured = 36% annualized ROI. Runs on the fast 8B model — millisecond latency per invoice.</p>
+      </div>
+    </div>
+
+    <div class="cols cols-6-4" style="flex:1">
+      <div class="card" style="background:#0A0A10;font-family:monospace;font-size:8pt;line-height:1.8">
+        <h3 style="font-family:'Segoe UI',sans-serif;margin-bottom:3mm">Function Calling Pattern</h3>
+        <span style="color:var(--blue)">response</span> = client.chat.completions.create(<br>
+        &nbsp;&nbsp;<span style="color:var(--muted)">model</span>=<span style="color:var(--green)">"llama-3.3-70b-versatile"</span>,<br>
+        &nbsp;&nbsp;<span style="color:var(--muted)">messages</span>=[system_msg, user_msg],<br>
+        &nbsp;&nbsp;<span style="color:var(--muted)">tools</span>=[{<span style="color:var(--green)">"type"</span>: <span style="color:var(--green)">"function"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">"function"</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">"name"</span>: <span style="color:var(--orange)">"extract_invoice"</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">"parameters"</span>: { <span style="color:var(--muted)">...schema</span> }<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;}}],<br>
+        &nbsp;&nbsp;<span style="color:var(--muted)">tool_choice</span>=<span style="color:var(--orange)">"required"</span>,<br>
+        &nbsp;&nbsp;<span style="color:var(--muted)">temperature</span>=<span style="color:var(--purple)">0.1</span><br>
+        )<br>
+        <span style="color:var(--blue)">args</span> = response.choices[<span style="color:var(--purple)">0</span>]<br>
+        &nbsp;&nbsp;.message.tool_calls[<span style="color:var(--purple)">0</span>]<br>
+        &nbsp;&nbsp;.function.arguments<br>
+        <span style="color:var(--blue)">result</span> = json.loads(args)
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3mm">
+        <div class="card">
+          <h3>Free Tier Limits</h3>
+          <table style="margin-top:2mm">
+            <thead><tr><th>Model</th><th>RPM</th><th>RPD</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge bo">70B</span> versatile</td><td>30</td><td>500</td></tr>
+              <tr><td><span class="badge bg">8B</span> instant</td><td>30</td><td>14,400</td></tr>
+              <tr><td><span class="badge bb">90B</span> vision</td><td>15</td><td>3,500</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="padding:3mm;background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.2);border-radius:3mm;font-size:8pt;color:var(--green)">
+          ✓ 100-invoice demo fits within daily limits<br>
+          ✓ $0 LLM cost — no API budget required<br>
+          ✓ &lt;1 second inference latency (8B model)
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="pg">5 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 6 — HUMAN-IN-THE-LOOP
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s6">
+  <div class="eyebrow">Human-in-the-Loop Design</div>
+  <div class="slide-title">Exceptions Routed, <em>Not Ignored</em></div>
+  <div class="slide-sub">Nine exception types — each with its own SLA, routing rule, and Groq-generated AI recommendation — surfaced directly in UiPath Action Center.</div>
+
+  <div class="body">
+    <div class="cols cols-6-4" style="flex:1">
+      <div>
+        <table style="margin-bottom:4mm">
+          <thead><tr><th>Exception Type</th><th>SLA</th><th>Routes To</th><th>Action Center Catalog</th></tr></thead>
+          <tbody>
+            <tr><td>🚨 Fraud Flag</td><td style="color:var(--red)">4 h</td><td>AP Manager</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>🔁 Duplicate Invoice</td><td style="color:var(--red)">4 h</td><td>AP Manager</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>💰 Amount Mismatch</td><td style="color:var(--orange)">24 h</td><td>AP Manager</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>📋 PO Not Found</td><td style="color:var(--orange)">24 h</td><td>Procurement</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>🏭 Vendor Mismatch</td><td style="color:var(--orange)">24 h</td><td>Vendor Mgmt</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>📦 GR Discrepancy</td><td style="color:var(--yellow)">48 h</td><td>Procurement</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>📅 Terms Conflict</td><td style="color:var(--yellow)">48 h</td><td>AP Team</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>💱 Currency Error</td><td style="color:var(--yellow)">48 h</td><td>AP Team</td><td><span class="badge bo">Exception</span></td></tr>
+            <tr><td>❓ Low Confidence</td><td>72 h</td><td>AP Team</td><td><span class="badge bo">Exception</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3mm">
+        <div class="card lo">
+          <h3>Action Center Task Flow</h3>
+          <ul class="clist" style="margin-top:1mm">
+            <li><span class="ico io">1</span><div><strong>Exception Detected</strong> — matching engine or anomaly detector creates exception record in DB</div></li>
+            <li><span class="ico io">2</span><div><strong>Groq Recommends</strong> — LLaMA generates resolution advice; task pushed to assignee's queue via Tasks API</div></li>
+            <li><span class="ico io">3</span><div><strong>Human Decides</strong> — approve / reject / credit note / vendor query / amend PO</div></li>
+            <li><span class="ico io">4</span><div><strong>Webhook Fires</strong> — HMAC-SHA256 signed event → exception resolved, invoice status updated, ERP triggered</div></li>
+          </ul>
+        </div>
+        <div class="card lg">
+          <h3>Action Center Catalogs</h3>
+          <p style="font-size:8pt;margin-bottom:2mm"><strong>IntelliFlow-AP-Exception</strong><br>
+          Input: invoice_id, vendor, amount, exception_type, ai_recommendation<br>
+          Output: action (select), resolution_notes</p>
+          <p style="font-size:8pt"><strong>IntelliFlow-AP-Approval</strong><br>
+          Input: invoice_id, vendor, amount, approval_level, po_reference<br>
+          Output: approved (bool), notes</p>
+        </div>
+        <div class="card">
+          <h3>SLA Status Tracking</h3>
+          <p style="font-size:8pt">Real-time: <span style="color:var(--green)">on_track</span> / <span style="color:var(--yellow)">at_risk</span> / <span style="color:var(--red)">breached</span><br>Surfaced in dashboard and analytics for every open exception.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="pg">6 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 7 — TECHNICAL ARCHITECTURE
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s7">
+  <div class="eyebrow">Technical Architecture</div>
+  <div class="slide-title">Production-Grade <em>Stack</em></div>
+  <div class="slide-sub">Every layer is built for real workloads — not a hackathon prototype, but a deployable system with proper auth, error handling, and audit trails.</div>
+
+  <div class="body">
+    <div class="cols cols-3" style="margin-bottom:4mm">
+      <div class="card lo">
+        <h3>Backend API</h3>
+        <ul class="clist">
+          <li><span class="ico io">⚡</span>FastAPI — async REST, 30+ endpoints</li>
+          <li><span class="ico io">🗃</span>SQLAlchemy + SQLite (swap to Postgres)</li>
+          <li><span class="ico io">🔒</span>OAuth2 machine-to-machine (UiPath)</li>
+          <li><span class="ico io">🔐</span>HMAC-SHA256 webhook validation</li>
+          <li><span class="ico io">📋</span>Full audit trail — every state transition logged</li>
+        </ul>
+      </div>
+      <div class="card lb">
+        <h3>AI Services</h3>
+        <ul class="clist">
+          <li><span class="ico ib">🤖</span>Groq SDK — OpenAI-compatible function calling</li>
+          <li><span class="ico ib">📄</span>3-model tier: 70B / 8B / 90B-vision</li>
+          <li><span class="ico ib">🧩</span>Structured tool schemas with JSON Schema</li>
+          <li><span class="ico ib">🔄</span>Robust fallback parsing (non-tool responses)</li>
+          <li><span class="ico ib">🖼</span>Base64 image parts for vision model</li>
+        </ul>
+      </div>
+      <div class="card lp">
+        <h3>UiPath Integration</h3>
+        <ul class="clist">
+          <li><span class="ico ip">🎭</span>Maestro BPMN — 8 service tasks (REST HTTP)</li>
+          <li><span class="ico ip">👤</span>Action Center — 2 custom task catalogs</li>
+          <li><span class="ico ip">🔑</span>In-memory OAuth2 token cache (60s buffer)</li>
+          <li><span class="ico ip">🔗</span>ngrok tunnel — public HTTPS for local dev</li>
+          <li><span class="ico ip">📡</span>Webhook receiver — task.completed + job.completed</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="cols cols-2" style="flex:1">
+      <div>
+        <div style="font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:2mm">Request Lifecycle</div>
+        <div class="card" style="background:#0A0A10;font-size:8pt;font-family:monospace;line-height:1.9">
+          <span style="color:var(--muted)"># 1. UiPath Maestro triggers service task</span><br>
+          POST <span style="color:var(--green)">/api/invoices/{id}/extract</span><br><br>
+          <span style="color:var(--muted)"># 2. FastAPI calls Groq</span><br>
+          groq.chat.completions.create(tool_choice=<span style="color:var(--orange)">"required"</span>)<br><br>
+          <span style="color:var(--muted)"># 3. Result stored, BPMN variable returned</span><br>
+          { <span style="color:var(--green)">"status"</span>: <span style="color:var(--orange)">"extracted"</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"extraction_confidence"</span>: <span style="color:var(--purple)">94</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"po_reference"</span>: <span style="color:var(--orange)">"PO-2024-001"</span> }<br><br>
+          <span style="color:var(--muted)"># 4. Human approves in Action Center</span><br>
+          POST <span style="color:var(--green)">/api/webhooks/uipath</span> ← UiPath fires
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3mm">
+        <div class="card">
+          <h3>File Structure</h3>
+          <div style="font-family:monospace;font-size:7.5pt;line-height:1.8;color:var(--muted)">
+            backend/<br>
+            &nbsp;&nbsp;<span style="color:var(--text)">main.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← FastAPI app<br>
+            &nbsp;&nbsp;<span style="color:var(--text)">models.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 6 ORM models<br>
+            &nbsp;&nbsp;services/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--orange)">ai_service.py</span> &nbsp;&nbsp;&nbsp;← Groq (3 models)<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--orange)">uipath_service.py</span> ← OAuth2 + API<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text)">matching_engine.py</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text)">exception_engine.py</span><br>
+            &nbsp;&nbsp;routers/<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--blue)">webhooks.py</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← UiPath callbacks<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text)">invoices.py, approvals.py …</span>
+          </div>
+        </div>
+        <div class="card lg">
+          <h3>Security Model</h3>
+          <p style="font-size:8pt">Webhooks signed with HMAC-SHA256 shared secret. Timing-safe comparison (<code>hmac.compare_digest</code>). OAuth2 client-credentials for all UiPath API calls. No secrets in code — all via <code>.env</code>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="pg">7 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 8 — BUSINESS IMPACT
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s8">
+  <div class="eyebrow">Business Impact</div>
+  <div class="slide-title">The <em>ROI</em> Case</div>
+  <div class="slide-sub">Measurable, immediate financial impact — cost reduction plus revenue generation from early-pay discount capture.</div>
+
+  <div class="body">
+    <div class="cols cols-4" style="margin-bottom:4mm">
+      <div class="card lg">
+        <h3>Touchless Rate</h3>
+        <div class="stat-num" style="color:var(--green)">76%</div>
+        <div class="stat-lbl">invoices with zero human touch</div>
+        <div class="stat-delta up">↑ from 0% manual baseline</div>
+      </div>
+      <div class="card lo">
+        <h3>Cost / Invoice</h3>
+        <div class="stat-num" style="color:var(--orange)">$0.56</div>
+        <div class="stat-lbl">vs $12.44 manual processing</div>
+        <div class="stat-delta up">-96% cost reduction</div>
+      </div>
+      <div class="card lb">
+        <h3>Cycle Time</h3>
+        <div class="stat-num" style="color:var(--blue)">&lt;1<span style="font-size:18pt">min</span></div>
+        <div class="stat-lbl">standard invoices</div>
+        <div class="stat-delta up">vs 3–5 business days</div>
+      </div>
+      <div class="card lp">
+        <h3>Discount ROI</h3>
+        <div class="stat-num" style="color:var(--purple)">36%</div>
+        <div class="stat-lbl">annualized return on early pays</div>
+        <div class="stat-delta up">2/10 Net 30 captured</div>
+      </div>
+    </div>
+
+    <div class="cols cols-2" style="flex:1">
+      <div>
+        <div style="font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:2mm">Annual Savings — 50,000 Invoice Enterprise</div>
+        <table>
+          <thead><tr><th>Category</th><th>Manual</th><th>IntelliFlow</th><th>Saving</th></tr></thead>
+          <tbody>
+            <tr><td>Processing cost</td><td>$622,000</td><td style="color:var(--green)">$28,000</td><td style="color:var(--green)"><strong>$594,000</strong></td></tr>
+            <tr><td>Exception handling</td><td>$180,000</td><td style="color:var(--green)">$22,000</td><td style="color:var(--green)"><strong>$158,000</strong></td></tr>
+            <tr><td>Fraud / errors</td><td>$95,000</td><td style="color:var(--green)">$8,000</td><td style="color:var(--green)"><strong>$87,000</strong></td></tr>
+            <tr><td>Discount capture <span style="color:var(--green);font-size:7pt">(NEW)</span></td><td>$0</td><td style="color:var(--green)">+$220,000</td><td style="color:var(--green)"><strong>$220,000</strong></td></tr>
+            <tr style="font-weight:800"><td>Total</td><td style="color:var(--red)">$897,000</td><td style="color:var(--green)">$58,000</td><td style="color:var(--green);font-size:11pt"><strong>$1,059,000</strong></td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:3mm;padding:2.5mm 3mm;background:rgba(0,200,83,0.06);border:1px solid rgba(0,200,83,0.2);border-radius:2.5mm">
+          <span style="font-size:9pt;color:var(--green);font-weight:700">Payback period: 2.1 months</span>
+          <span style="font-size:8pt;color:var(--muted);display:block;margin-top:0.5mm">First month's discount capture alone offsets implementation cost</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3mm">
+        <div style="font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted)">Processing Time vs Manual Baseline</div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>Manual Invoice Processing</span><strong>3–5 days</strong></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>Standard (IntelliFlow)</span><strong>&lt;60 seconds</strong></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:2%;background:var(--green)"></div></div>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>Exception invoice (with human)</span><strong>2–4 hours</strong></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:8%;background:var(--orange)"></div></div>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-label"><span>CFO Approval invoice</span><strong>Same day</strong></div>
+          <div class="prog-bar"><div class="prog-fill" style="width:15%;background:var(--blue)"></div></div>
+        </div>
+        <div class="card" style="margin-top:2mm">
+          <h3>SLA Compliance</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;margin-top:2mm;text-align:center">
+            <div><div style="font-size:16pt;font-weight:800;color:var(--green)">94%</div><div style="font-size:7pt;color:var(--muted)">On Track</div></div>
+            <div><div style="font-size:16pt;font-weight:800;color:var(--yellow)">4%</div><div style="font-size:7pt;color:var(--muted)">At Risk</div></div>
+            <div><div style="font-size:16pt;font-weight:800;color:var(--red)">2%</div><div style="font-size:7pt;color:var(--muted)">Breached</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="pg">8 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 9 — UIPATH COMPONENTS
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s9">
+  <div class="eyebrow">UiPath Platform Integration</div>
+  <div class="slide-title">Six UiPath Components, <em>One</em> Cohesive Platform</div>
+  <div class="slide-sub">Every layer of UiPath Automation Cloud is utilized — this is a platform-first solution, not an API-only integration.</div>
+
+  <div class="body">
+    <div class="cols cols-2" style="flex:1;gap:4mm">
+      <div class="card lo" style="display:flex;gap:4mm;align-items:flex-start">
+        <div style="font-size:24pt;flex-shrink:0">⚙️</div>
+        <div>
+          <div style="font-size:10pt;font-weight:700;margin-bottom:1mm">Maestro BPMN &nbsp;<span class="badge bo">Core Orchestration</span></div>
+          <p>8 service tasks + 3 gateways + 3 user tasks form the complete invoice lifecycle. Visual process that business and IT both understand. Each service task makes a REST call to the FastAPI backend and maps JSON response fields to BPMN process variables.</p>
+        </div>
+      </div>
+      <div class="card lb" style="display:flex;gap:4mm;align-items:flex-start">
+        <div style="font-size:24pt;flex-shrink:0">👤</div>
+        <div>
+          <div style="font-size:10pt;font-weight:700;margin-bottom:1mm">Action Center &nbsp;<span class="badge bb">Human-in-the-Loop</span></div>
+          <p>Two custom task catalogs: <code>IntelliFlow-AP-Exception</code> and <code>IntelliFlow-AP-Approval</code>. Forms surface Groq AI recommendations alongside invoice data for context-rich, informed decisions. Decision feeds back via webhook.</p>
+        </div>
+      </div>
+      <div class="card lp" style="display:flex;gap:4mm;align-items:flex-start">
+        <div style="font-size:24pt;flex-shrink:0">🤖</div>
+        <div>
+          <div style="font-size:10pt;font-weight:700;margin-bottom:1mm">Agent Builder &nbsp;<span class="badge bp">AI Agents</span></div>
+          <p>Wraps Groq extraction and anomaly detection as reusable callable agents within the BPMN flow. Low-code agent definition meets production-grade Groq inference — the best of both worlds.</p>
+        </div>
+      </div>
+      <div class="card lg" style="display:flex;gap:4mm;align-items:flex-start">
+        <div style="font-size:24pt;flex-shrink:0">🏗</div>
+        <div>
+          <div style="font-size:10pt;font-weight:700;margin-bottom:1mm">Orchestrator &nbsp;<span class="badge bg">Process Lifecycle</span></div>
+          <p>OAuth2 machine-to-machine auth with in-memory token caching. Process instance management, robot job scheduling, and HMAC-SHA256 signed webhook delivery to the FastAPI backend in real time.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:4mm;align-items:flex-start">
+        <div style="font-size:24pt;flex-shrink:0">🖥</div>
+        <div>
+          <div style="font-size:10pt;font-weight:700;margin-bottom:1mm">Studio / Robot &nbsp;<span class="badge bb">RPA Automation</span></div>
+          <p>Email monitoring robot watches the AP inbox and attaches PDFs to the invoice pipeline. ERP integration sequences and vendor notification workflows run as unattended robots on the configured machine.</p>
+        </div>
+      </div>
+      <div class="card" style="display:flex;gap:4mm;align-items:flex-start">
+        <div style="font-size:24pt;flex-shrink:0">🔗</div>
+        <div>
+          <div style="font-size:10pt;font-weight:700;margin-bottom:1mm">API Workflows &nbsp;<span class="badge bo">REST Integration</span></div>
+          <p>All 8 BPMN service tasks use REST HTTP implementation. Response field mapping pulls extraction confidence, match scores, invoice status, and payment dates into process variables for gateway decisions.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:4mm;padding:3mm 4mm;background:rgba(255,109,0,0.05);border:1px solid rgba(255,109,0,0.2);border-radius:3mm;font-size:8pt">
+      <strong style="color:var(--orange)">Agent Type Declaration (required):</strong>
+      <span style="color:var(--muted);margin-left:2mm">Low-code agents via Agent Builder + custom Python FastAPI service layer</span>
+      &nbsp;&nbsp;·&nbsp;&nbsp;
+      <strong style="color:var(--orange)">External LLM:</strong>
+      <span style="color:var(--muted);margin-left:2mm">Groq — llama-3.3-70b-versatile · llama-3.1-8b-instant · llama-3.2-90b-vision-preview</span>
+    </div>
+  </div>
+  <span class="pg">9 / 10</span>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     SLIDE 10 — ROADMAP
+══════════════════════════════════════════════════════ -->
+<section class="slide" id="s10">
+  <div class="eyebrow">Roadmap</div>
+  <div class="slide-title">Built for Today. <em>Designed</em> for Scale.</div>
+  <div class="slide-sub">IntelliFlow AP is deployable now. These additions take it from hackathon-ready to enterprise-grade SaaS.</div>
+
+  <div class="body">
+    <div class="cols cols-2" style="margin-bottom:4mm">
+      <div>
+        <div style="font-size:8pt;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:2mm">Phase 2 — Enterprise Scale</div>
+        <ul class="clist">
+          <li><span class="ico io">🏢</span><div><strong>Multi-tenant SaaS</strong> — tenant-isolated databases, per-tenant threshold configuration, white-label dashboard for resellers</div></li>
+          <li><span class="ico ib">🔌</span><div><strong>ERP Connectors</strong> — native SAP S/4HANA, Oracle NetSuite, Microsoft Dynamics 365 REST integrations replacing mock ERP layer</div></li>
+          <li><span class="ico ig">📧</span><div><strong>Email Robot</strong> — UiPath unattended robot monitors AP inbox, extracts and attaches PDFs without portal submission</div></li>
+          <li><span class="ico ip">🏪</span><div><strong>Vendor Self-Service Portal</strong> — vendors submit invoices, track status, upload credit notes and supporting docs directly</div></li>
+          <li><span class="ico io">📊</span><div><strong>Predictive Exception ML</strong> — model trained on historical AP data predicts exception likelihood before matching even runs</div></li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3mm">
+        <div class="card lo">
+          <h3>Why This Wins</h3>
+          <ul class="clist">
+            <li><span class="ico ig">✓</span><div>Real UiPath Maestro BPMN — actual 8-task process in Orchestrator, not a mock or wrapper</div></li>
+            <li><span class="ico ig">✓</span><div>Production-quality code — FastAPI, SQLAlchemy, proper state machine, webhook security</div></li>
+            <li><span class="ico ig">✓</span><div>Complete business case — quantified ROI, SLA tracking, full exception audit trail</div></li>
+            <li><span class="ico ig">✓</span><div>Zero-cost AI — Groq free tier eliminates LLM budget barrier for demo and early production</div></li>
+          </ul>
+        </div>
+        <div class="cols cols-4" style="gap:2mm">
+          <div class="card" style="text-align:center;padding:3mm 1mm">
+            <div style="font-size:18pt;font-weight:800;color:var(--orange)">30+</div>
+            <div style="font-size:7pt;color:var(--muted)">API endpoints</div>
+          </div>
+          <div class="card" style="text-align:center;padding:3mm 1mm">
+            <div style="font-size:18pt;font-weight:800;color:var(--green)">11</div>
+            <div style="font-size:7pt;color:var(--muted)">status states</div>
+          </div>
+          <div class="card" style="text-align:center;padding:3mm 1mm">
+            <div style="font-size:18pt;font-weight:800;color:var(--blue)">9</div>
+            <div style="font-size:7pt;color:var(--muted)">exception types</div>
+          </div>
+          <div class="card" style="text-align:center;padding:3mm 1mm">
+            <div style="font-size:18pt;font-weight:800;color:var(--purple)">6</div>
+            <div style="font-size:7pt;color:var(--muted)">UiPath layers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <span class="pg">10 / 10</span>
+</section>
+
+<!-- ── Intersection observer for nav active state ─── -->
+<script>
+  const links = document.querySelectorAll('#nav a');
+  const sections = document.querySelectorAll('.slide');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`#nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.5 });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

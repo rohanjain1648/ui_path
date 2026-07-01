@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import InvoiceException, ExceptionStatus, Invoice, InvoiceStatus
-from backend.services.claude_extraction import recommend_exception_resolution
+from backend.services.ai_service import recommend_exception_resolution
 from backend.services.exception_engine import get_sla_status
 
 router = APIRouter()

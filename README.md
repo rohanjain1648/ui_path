@@ -4,7 +4,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green)](https://fastapi.tiangolo.com)
-[![Claude](https://img.shields.io/badge/Claude-claude--sonnet--4--6-purple)](https://anthropic.com)
+[![Groq](https://img.shields.io/badge/Groq-LLaMA_3.3_70B-orange)](https://groq.com)
 [![UiPath](https://img.shields.io/badge/UiPath-Maestro_BPMN-orange)](https://uipath.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
@@ -209,13 +209,16 @@ IntelliFlow AP is an **AI-native Accounts Payable platform** that combines:
   Orchestration      UiPath Maestro BPMN          Process flow control
   Human Tasks        UiPath Action Center         Exception + approval UI
   RPA Bots           UiPath Studio (Robot)        Email, ERP, notify
-  AI Agents          UiPath Agent Builder         Claude-powered agents
-  AI Model           Claude claude-sonnet-4-6              Document intelligence
+  AI Agents          UiPath Agent Builder         Groq-powered agents
+  AI Model           Groq llama-3.3-70b-versatile Document intelligence (FREE)
+  AI Model (vision)  Groq llama-3.2-90b-vision    Image invoice support (FREE)
+  AI Model (fast)    Groq llama-3.1-8b-instant    Quick text tasks (FREE)
   Backend API        Python 3.11 + FastAPI        Business logic layer
   Database           SQLite (dev) / Postgres      Persistence
   ORM                SQLAlchemy 2.0               Data access
   Validation         Pydantic v2                  Schema enforcement
   Frontend           HTML + Tailwind + Chart.js   Real-time dashboard
+  Tunnel (dev)       ngrok                        Public URL for UiPath callbacks
   Testing            pytest + TestClient          Integration tests
 ```
 
@@ -399,22 +402,32 @@ IntelliFlow AP is an **AI-native Accounts Payable platform** that combines:
 
 ---
 
-## 5. Claude AI Intelligence Layer
+## 5. Groq AI Intelligence Layer
 
-### How Claude Is Used
+### Why Groq
 
-IntelliFlow AP uses Claude in **four distinct roles**, each with optimised prompting strategies:
+Groq provides **free-tier access** to best-in-class open-source LLMs with industry-leading inference speed (up to 750 tokens/second). For IntelliFlow AP, this means:
+- **Zero AI cost** during development and hackathon demo
+- **Sub-second extraction** — invoices processed faster than any human could read them
+- **Function calling support** — structured JSON output for reliable data extraction
+- **Vision support** — image-based invoice processing via llama-3.2-90b
+
+Get your free API key at **https://console.groq.com**
+
+### How Groq Is Used
+
+IntelliFlow AP uses Groq in **four distinct roles** via `backend/services/ai_service.py`:
 
 ```
-  CLAUDE INTEGRATION MAP
+  GROQ INTEGRATION MAP
   ═══════════════════════════════════════════════════════════════════════
 
   ┌─────────────────────────────────────────────────────────────────┐
   │  Role 1: INVOICE EXTRACTION                                     │
-  │  Model:  claude-sonnet-4-6                                              │
-  │  Method: tool_use (structured output)                           │
+  │  Model:  llama-3.3-70b-versatile (text)                        │
+  │          llama-3.2-90b-vision-preview (image/PDF)              │
+  │  Method: Function calling (tool_choice="required")             │
   │  Tool:   extract_invoice_data                                   │
-  │  Cache:  System prompt (ephemeral) → 90% cheaper on retries    │
   │                                                                 │
   │  Input:  Raw invoice text OR base64 image                      │
   │  Output: {vendor_name, invoice_number, invoice_date,            │
@@ -424,16 +437,15 @@ IntelliFlow AP uses Claude in **four distinct roles**, each with optimised promp
   │  Confidence scoring:                                            │
   │    Mandatory fields present (25pts each):                       │
   │      vendor_name + invoice_number + invoice_date + amount       │
-  │    Deductions: illegible (-20), conflicting (-10),             │
-  │    unusual format (-5), missing optional fields (-2 each)       │
+  │    Deductions: conflicting (-10), unusual format (-5),          │
+  │    missing optional fields (-3 each)                            │
   └─────────────────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────────────────────────┐
   │  Role 2: ANOMALY & FRAUD DETECTION                              │
-  │  Model:  claude-sonnet-4-6                                              │
-  │  Method: tool_use (structured output)                           │
+  │  Model:  llama-3.3-70b-versatile                               │
+  │  Method: Function calling                                       │
   │  Tool:   detect_invoice_anomalies                               │
-  │  Cache:  System prompt (ephemeral)                              │
   │                                                                 │
   │  8 Fraud Patterns Checked:                                      │
   │    1. round_number_bias       — amounts ending in .00           │
@@ -457,9 +469,8 @@ IntelliFlow AP uses Claude in **four distinct roles**, each with optimised promp
 
   ┌─────────────────────────────────────────────────────────────────┐
   │  Role 3: PAYMENT OPTIMIZATION                                   │
-  │  Model:  claude-sonnet-4-6                                              │
-  │  Method: Structured JSON response (free-form reasoning)         │
-  │  Cache:  Not cached (unique per invoice)                        │
+  │  Model:  llama-3.1-8b-instant (fast, cheap)                   │
+  │  Method: Structured JSON text response                          │
   │                                                                 │
   │  Input:  payment_terms, invoice_date, due_date, amount,         │
   │          company_cash_position                                  │
@@ -476,43 +487,37 @@ IntelliFlow AP uses Claude in **four distinct roles**, each with optimised promp
 
   ┌─────────────────────────────────────────────────────────────────┐
   │  Role 4: EXCEPTION RESOLUTION ADVISOR                           │
-  │  Model:  claude-sonnet-4-6                                              │
+  │  Model:  llama-3.1-8b-instant (fast, cheap)                   │
   │  Method: Direct text response                                   │
-  │  Cache:  Not cached (unique per exception)                      │
   │                                                                 │
   │  Input:  exception_type, invoice_data, po_data, context        │
-  │  Output: 2-3 sentence recommendation with:                     │
+  │  Output: 2-3 sentence actionable recommendation                │
   │    • What to verify                                             │
   │    • Who to contact                                             │
   │    • What documentation to request                              │
-  │                                                                 │
-  │  Example output:                                                │
-  │    "The invoice amount ($16,926) exceeds the PO amount         │
-  │    ($15,600) by 8.5%, outside the 2% tolerance. Contact        │
-  │    Acme Software at ap@acmesoftware.com to obtain a credit     │
-  │    note for $1,326 or request a PO amendment through           │
-  │    procurement. Attach PO-2024-001 and this invoice to your    │
-  │    email."                                                      │
   └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Prompt Caching Strategy
+### Groq Free Tier Limits
 
 ```
-  PROMPT CACHING — COST OPTIMISATION
+  GROQ FREE TIER (as of 2025)
   ═══════════════════════════════════════════════════════════════════════
 
-  Without caching (per 200-invoice batch):
-    Each call: ~800 tokens system prompt input
-    800 × 200 × $3/MTok = $0.48 in system prompt costs
+  Model                          RPM    RPD    TPM
+  ─────────────────────────────  ─────  ─────  ──────────
+  llama-3.3-70b-versatile        30     500    6,000
+  llama-3.1-8b-instant           30     14,400 20,000
+  llama-3.2-90b-vision-preview   15     250    7,000
 
-  With ephemeral cache (5-minute TTL):
-    First call: 800 tokens written to cache
-    Next calls within 5 min: 800 tokens at $0.30/MTok (90% off)
-    High-volume batches: ~90% reduction in system prompt cost
+  For a 100-invoice demo:
+    Extraction calls   : 100 × ~600 tokens = 60,000 tokens
+    Anomaly calls      : 100 × ~400 tokens = 40,000 tokens
+    Optimization calls :  75 × ~100 tokens =  7,500 tokens (fast model)
+    Advisor calls      :  15 × ~150 tokens =  2,250 tokens (fast model)
 
-  Cache hit rate in production (100 inv/hr): ~85%+
-  Net AI cost per invoice: ~$0.05–$0.12
+  Total: well within free limits for hackathon demo.
+  Use llama-3.1-8b-instant for payment + advisor = saves 70B quota for extraction.
 ```
 
 ---
@@ -1068,8 +1073,11 @@ cp .env.example .env
 
 Edit `.env` and set at minimum:
 ```env
-ANTHROPIC_API_KEY=sk-ant-...your-key-here...
+# Get free key at https://console.groq.com → API Keys → Create API Key
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
+
+For full UiPath integration, see **[UIPATH_SETUP.md](UIPATH_SETUP.md)** for step-by-step instructions.
 
 ### Running the Application
 
@@ -1259,32 +1267,12 @@ Human tasks (exceptions and approvals) are delivered to AP staff via UiPath Acti
 
 | Criteria | How IntelliFlow AP Delivers |
 |----------|----------------------------|
-| Working prototype | Full FastAPI backend + dashboard running locally |
+| Working prototype | Full FastAPI backend + real-time dashboard running locally |
 | End-to-end flow | 8 BPMN tasks from ingestion to payment scheduling |
-| Real-world complexity | 3-way matching, fraud detection, multi-level approvals |
+| Real-world complexity | 3-way matching, fraud detection, multi-level approval routing |
 | Humans in the loop | Exception queue (AP team) + amount-based approvals (Mgr/Dir/CFO) |
-| UiPath as orchestration layer | All flow control in Maestro BPMN; logic is in FastAPI |
-| External AI framework | Anthropic SDK (Claude claude-sonnet-4-6) via Agent Builder service tasks |
-| **Coding agent bonus** | **Built entirely with Claude Code (UiPath for Coding Agents)** |
-
-### Claude Code Usage (Bonus Points)
-
-This entire solution was built using **Claude Code** as the coding agent within the UiPath for Coding Agents framework. The demo video should show:
-
-1. This Claude Code session where the backend was designed and generated
-2. Real-time code generation for specific business logic (matching engine, anomaly detection)
-3. Iterative refinement via natural language instructions
-4. The connection between Claude Code (building tool) and Claude API (runtime intelligence)
-
-### Team / Submission Checklist
-
-- [ ] Devpost project page with description, screenshots, architecture diagram
-- [ ] Demo video (≤5 min): show invoice ingestion → AI processing → dashboard live → approval action
-- [ ] GitHub repository (this repo) with MIT License
-- [ ] Solution running on UiPath Automation Cloud
-- [ ] `.env` configured with UiPath Orchestrator credentials
-- [ ] Presentation deck (link in submission form)
-- [ ] (Optional) Product feedback form for Best Product Feedback award
+| UiPath as orchestration layer | All flow control in Maestro BPMN; AI logic in FastAPI service tasks |
+| External AI framework | Groq SDK (llama-3.3-70b + llama-3.1-8b + llama-3.2-90b-vision) |
 
 ---
 
@@ -1293,7 +1281,3 @@ This entire solution was built using **Claude Code** as the coding agent within 
 MIT License — Copyright 2025
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so.
-
----
-
-*Built with Claude Code — UiPath for Coding Agents — UiPath AgentHack 2025*

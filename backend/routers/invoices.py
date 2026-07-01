@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import Invoice, InvoiceStatus, Vendor
-from backend.services import claude_extraction, matching_engine, exception_engine, erp_mock
+from backend.services import ai_service, matching_engine, exception_engine, erp_mock
 
 router = APIRouter()
 
@@ -113,7 +113,7 @@ async def extract_invoice(invoice_id: str, db: Session = Depends(get_db)):
     Useful for manual re-extraction after data corrections.
     """
     invoice = _get_or_404(invoice_id, db)
-    extracted = await claude_extraction.extract_invoice(invoice.raw_content or "")
+    extracted = await ai_service.extract_invoice(invoice.raw_content or "")
     _apply_extraction(invoice, extracted)
     invoice.status = InvoiceStatus.EXTRACTED
     db.commit()
@@ -189,7 +189,7 @@ async def post_to_erp(invoice_id: str, db: Session = Depends(get_db)):
     db.commit()
 
     # Optimize payment timing
-    pay_optimization = await claude_extraction.optimize_payment_timing(
+    pay_optimization = await ai_service.optimize_payment_timing(
         {
             "vendor_name": invoice.vendor_name,
             "total_amount": invoice.total_amount,
@@ -328,7 +328,7 @@ async def _run_full_pipeline(
             return
 
         # Step 1: Extract
-        extracted = await claude_extraction.extract_invoice(
+        extracted = await ai_service.extract_invoice(
             invoice.raw_content or "", image_b64, media_type
         )
         _apply_extraction(invoice, extracted)
@@ -344,7 +344,7 @@ async def _run_full_pipeline(
                 invoice.vendor_id = vendor.id
 
         # Step 2: Anomaly detection
-        anomaly = await claude_extraction.detect_anomalies(
+        anomaly = await ai_service.detect_anomalies(
             invoice_data=extracted,
             vendor_master={"name": invoice.vendor_name, "bank_account": None},
         )

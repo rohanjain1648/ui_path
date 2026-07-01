@@ -11,11 +11,11 @@ from fastapi.responses import FileResponse
 import pathlib
 
 from backend.database import engine, Base, SessionLocal
-from backend.routers import invoices, purchase_orders, exceptions_router, approvals, analytics
+from backend.routers import invoices, purchase_orders, exceptions_router, approvals, analytics, webhooks
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     Base.metadata.create_all(bind=engine)
     _seed_demo_data()
     yield
@@ -26,7 +26,7 @@ app = FastAPI(
     description=(
         "AI-native Accounts Payable orchestration platform. "
         "Backend API consumed by UiPath Maestro BPMN service tasks. "
-        "Powered by Claude claude-sonnet-4-6 for document intelligence."
+        "Powered by Groq LLaMA-3.3-70B for document intelligence."
     ),
     version="1.0.0",
     lifespan=lifespan,
@@ -47,6 +47,7 @@ app.include_router(purchase_orders.router, prefix="/api/purchase-orders", tags=[
 app.include_router(exceptions_router.router, prefix="/api/exceptions", tags=["Exceptions"])
 app.include_router(approvals.router, prefix="/api/approvals", tags=["Approvals"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
+app.include_router(webhooks.router, prefix="/api/webhooks", tags=["Webhooks"])
 
 
 # Serve frontend SPA
